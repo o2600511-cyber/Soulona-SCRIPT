@@ -1,0 +1,1544 @@
+-- PELI EDITOR v5.0
+-- Roblox Script Generator
+-- Create your own scripts easily!
+
+local player = game.Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- Editor State
+local EditorConfig = {
+    ScriptName = "MY SCRIPT",
+    ScriptSubtitle = "Universal Hub",
+    
+    -- Icon settings
+    UseCustomIcon = true,
+    IconId = "",
+    IconLetter = "MH",
+    IconLetterR = 255, IconLetterG = 255, IconLetterB = 255,
+    
+    -- Colors (RGB)
+    PrimaryR = 255, PrimaryG = 255, PrimaryB = 255,
+    SecondaryR = 200, SecondaryG = 200, SecondaryB = 200,
+    AccentR = 180, AccentG = 180, AccentB = 180,
+    BackgroundR = 15, BackgroundG = 15, BackgroundB = 15,
+    DarkBgR = 25, DarkBgG = 25, DarkBgB = 25,
+    FrameR = 35, FrameG = 35, FrameB = 35,
+    
+    -- Tabs (default ON)
+    AFKTab = true,
+    MainTab = true,
+    ESPTab = true,
+    FPSTab = true,
+    
+    -- Features (default OFF - red X means ON when clicked)
+    KingMode = false,
+    AntiAFK = false,
+    SpeedBoost = false,
+    SuperJump = false,
+    WalkSpeedSlider = false,
+    JumpPowerSlider = false,
+    PlayerESP = false,
+    ESPNames = false,
+    ESPDistance = false,
+    Tracers = false,
+    FPSBoost = false,
+    DisableParticles = false,
+    ShowFPS = false,
+}
+
+local currentTab = "INFO"
+local generatedScript = ""
+
+-- Colors
+local COLORS = {
+    White = Color3.fromRGB(255, 255, 255),
+    Black = Color3.fromRGB(0, 0, 0),
+    Background = Color3.fromRGB(8, 8, 8),
+    DarkBG = Color3.fromRGB(14, 14, 14),
+    Frame = Color3.fromRGB(22, 22, 22),
+    FrameLight = Color3.fromRGB(32, 32, 32),
+    Gray = Color3.fromRGB(50, 50, 50),
+    LightGray = Color3.fromRGB(160, 160, 160),
+    Green = Color3.fromRGB(80, 220, 100),
+    Red = Color3.fromRGB(220, 70, 70),
+    Accent = Color3.fromRGB(220, 220, 220),
+    ActiveGreen = Color3.fromRGB(40, 100, 50),
+    ActiveRed = Color3.fromRGB(120, 35, 35),
+}
+
+-- Color presets
+local ColorPresets = {
+    {name = "White", r = 255, g = 255, b = 255},
+    {name = "Red", r = 255, g = 70, b = 70},
+    {name = "Green", r = 70, g = 255, b = 100},
+    {name = "Blue", r = 70, g = 130, b = 255},
+    {name = "Yellow", r = 255, g = 230, b = 70},
+    {name = "Purple", r = 180, g = 70, b = 255},
+    {name = "Cyan", r = 70, g = 230, b = 255},
+    {name = "Orange", r = 255, g = 150, b = 70},
+    {name = "Pink", r = 255, g = 120, b = 200},
+    {name = "Gray", r = 140, g = 140, b = 140},
+}
+
+-- Helper Functions
+local function tween(obj, props, duration, style, direction)
+    if not obj or not obj.Parent then return end
+    pcall(function()
+        TweenService:Create(obj, TweenInfo.new(duration or 0.25, style or Enum.EasingStyle.Quint, direction or Enum.EasingDirection.Out), props):Play()
+    end)
+end
+
+local function notify(text)
+    pcall(function()
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "PELI EDITOR",
+            Text = text,
+            Duration = 2.5,
+            Icon = "rbxassetid://73418556711551"
+        })
+    end)
+end
+
+local function createCorner(parent, radius)
+    local corner = Instance.new("UICorner", parent)
+    corner.CornerRadius = UDim.new(0, radius or 12)
+    return corner
+end
+
+local function createStroke(parent, color, thickness, transparency)
+    local stroke = Instance.new("UIStroke", parent)
+    stroke.Color = color or COLORS.White
+    stroke.Thickness = thickness or 1.5
+    stroke.Transparency = transparency or 0.3
+    return stroke
+end
+
+local function createGradient(parent, color1, color2, rotation)
+    local gradient = Instance.new("UIGradient", parent)
+    gradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, color1), ColorSequenceKeypoint.new(1, color2)}
+    gradient.Rotation = rotation or 90
+    return gradient
+end
+
+-- GUI Creation
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PeliEditor"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = game.CoreGui
+
+-- ICON BUTTON (CLEAN - NO EFFECTS)
+local iconBtn = Instance.new("ImageButton")
+iconBtn.Name = "Icon"
+iconBtn.Size = UDim2.new(0, 60, 0, 60)
+iconBtn.Position = UDim2.new(0, 20, 0, 20)
+iconBtn.BackgroundColor3 = COLORS.Background
+iconBtn.BorderSizePixel = 0
+iconBtn.Image = "rbxassetid://73418556711551"
+iconBtn.ScaleType = Enum.ScaleType.Fit
+iconBtn.Active = true
+iconBtn.Draggable = true
+iconBtn.Parent = screenGui
+createCorner(iconBtn, 14)
+createStroke(iconBtn, COLORS.White, 2)
+
+-- MAIN FRAME (550x340)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "Main"
+mainFrame.Size = UDim2.new(0, 550, 0, 340)
+mainFrame.Position = UDim2.new(0.5, -275, 0.5, -170)
+mainFrame.BackgroundColor3 = COLORS.Background
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Visible = false
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = screenGui
+createCorner(mainFrame, 18)
+createStroke(mainFrame, COLORS.White, 2, 0)
+
+-- Inner glow effect
+local innerGlow = Instance.new("Frame", mainFrame)
+innerGlow.Size = UDim2.new(1, -4, 1, -4)
+innerGlow.Position = UDim2.new(0, 2, 0, 2)
+innerGlow.BackgroundTransparency = 0.98
+innerGlow.BackgroundColor3 = COLORS.White
+innerGlow.BorderSizePixel = 0
+innerGlow.ZIndex = 1
+createCorner(innerGlow, 16)
+
+-- HEADER
+local header = Instance.new("Frame", mainFrame)
+header.Size = UDim2.new(1, 0, 0, 52)
+header.BackgroundColor3 = COLORS.White
+header.BorderSizePixel = 0
+header.ZIndex = 10
+createCorner(header, 18)
+createGradient(header, Color3.fromRGB(240, 240, 240), Color3.fromRGB(180, 180, 180), 90)
+
+local headerCover = Instance.new("Frame", header)
+headerCover.Size = UDim2.new(1, 0, 0, 18)
+headerCover.Position = UDim2.new(0, 0, 1, -18)
+headerCover.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+headerCover.BorderSizePixel = 0
+headerCover.ZIndex = 10
+
+local headerLogo = Instance.new("ImageLabel", header)
+headerLogo.Size = UDim2.new(0, 36, 0, 36)
+headerLogo.Position = UDim2.new(0, 10, 0.5, -18)
+headerLogo.BackgroundColor3 = COLORS.Background
+headerLogo.Image = "rbxassetid://73418556711551"
+headerLogo.ScaleType = Enum.ScaleType.Fit
+headerLogo.BorderSizePixel = 0
+headerLogo.ZIndex = 11
+createCorner(headerLogo, 10)
+
+local headerTitle = Instance.new("TextLabel", header)
+headerTitle.Size = UDim2.new(0, 200, 0, 20)
+headerTitle.Position = UDim2.new(0, 54, 0, 10)
+headerTitle.BackgroundTransparency = 1
+headerTitle.Text = "PELI EDITOR"
+headerTitle.TextColor3 = COLORS.Black
+headerTitle.Font = Enum.Font.GothamBlack
+headerTitle.TextSize = 17
+headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+headerTitle.ZIndex = 11
+
+local headerSubtitle = Instance.new("TextLabel", header)
+headerSubtitle.Size = UDim2.new(0, 200, 0, 14)
+headerSubtitle.Position = UDim2.new(0, 54, 0, 30)
+headerSubtitle.BackgroundTransparency = 1
+headerSubtitle.Text = "Script Generator v3"
+headerSubtitle.TextColor3 = Color3.fromRGB(80, 80, 80)
+headerSubtitle.Font = Enum.Font.Gotham
+headerSubtitle.TextSize = 10
+headerSubtitle.TextXAlignment = Enum.TextXAlignment.Left
+headerSubtitle.ZIndex = 11
+
+-- MINIMIZE BUTTON
+local minimizeBtn = Instance.new("TextButton", header)
+minimizeBtn.Size = UDim2.new(0, 28, 0, 28)
+minimizeBtn.Position = UDim2.new(1, -70, 0.5, -14)
+minimizeBtn.Text = "—"
+minimizeBtn.BackgroundColor3 = COLORS.Background
+minimizeBtn.TextColor3 = COLORS.White
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextSize = 14
+minimizeBtn.BorderSizePixel = 0
+minimizeBtn.ZIndex = 12
+createCorner(minimizeBtn, 8)
+
+-- CLOSE BUTTON
+local closeBtn = Instance.new("TextButton", header)
+closeBtn.Size = UDim2.new(0, 28, 0, 28)
+closeBtn.Position = UDim2.new(1, -38, 0.5, -14)
+closeBtn.Text = "×"
+closeBtn.BackgroundColor3 = COLORS.Red
+closeBtn.TextColor3 = COLORS.White
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 18
+closeBtn.BorderSizePixel = 0
+closeBtn.ZIndex = 12
+createCorner(closeBtn, 8)
+
+-- TAB SIDEBAR
+local tabSidebar = Instance.new("Frame", mainFrame)
+tabSidebar.Size = UDim2.new(0, 110, 0, 280)
+tabSidebar.Position = UDim2.new(0, 5, 0, 56)
+tabSidebar.BackgroundColor3 = COLORS.DarkBG
+tabSidebar.BorderSizePixel = 0
+tabSidebar.ZIndex = 5
+createCorner(tabSidebar, 14)
+createStroke(tabSidebar, COLORS.Gray, 1, 0.5)
+
+-- Tab buttons
+local tabs = {"INFO", "ICON", "COLORS", "AFK", "MAIN", "ESP", "FPS", "GENERATE"}
+local tabButtons = {}
+
+for i, tabName in ipairs(tabs) do
+    local btn = Instance.new("TextButton", tabSidebar)
+    btn.Name = tabName
+    btn.Size = UDim2.new(1, -8, 0, 30)
+    btn.Position = UDim2.new(0, 4, 0, 4 + (i-1) * 34)
+    btn.Text = tabName
+    btn.BackgroundColor3 = (tabName == "INFO") and COLORS.White or COLORS.Frame
+    btn.TextColor3 = (tabName == "INFO") and COLORS.Black or COLORS.LightGray
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.BorderSizePixel = 0
+    btn.ZIndex = 6
+    createCorner(btn, 8)
+    
+    if tabName == "GENERATE" then
+        btn.BackgroundColor3 = COLORS.Green
+        btn.TextColor3 = COLORS.White
+    end
+    
+    tabButtons[tabName] = btn
+end
+
+-- CONTENT AREA
+local contentArea = Instance.new("Frame", mainFrame)
+contentArea.Size = UDim2.new(0, 425, 0, 280)
+contentArea.Position = UDim2.new(0, 120, 0, 56)
+contentArea.BackgroundTransparency = 1
+contentArea.BorderSizePixel = 0
+contentArea.ZIndex = 5
+
+-- Content containers
+local contentContainers = {}
+
+for _, tabName in ipairs(tabs) do
+    local container = Instance.new("ScrollingFrame", contentArea)
+    container.Name = tabName
+    container.Size = UDim2.new(1, 0, 1, 0)
+    container.BackgroundTransparency = 1
+    container.BorderSizePixel = 0
+    container.ScrollBarThickness = 3
+    container.ScrollBarImageColor3 = COLORS.White
+    container.Visible = (tabName == "INFO")
+    container.CanvasSize = UDim2.new(0, 0, 0, 420)
+    container.ZIndex = 5
+    contentContainers[tabName] = container
+end
+
+-- ===== UI COMPONENT CREATORS =====
+
+local function createTextInput(parent, labelText, configKey, posY, placeholder)
+    local container = Instance.new("Frame", parent)
+    container.Size = UDim2.new(1, -12, 0, 62)
+    container.Position = UDim2.new(0, 6, 0, posY)
+    container.BackgroundColor3 = COLORS.Frame
+    container.BorderSizePixel = 0
+    container.ZIndex = 6
+    createCorner(container, 10)
+    createStroke(container, COLORS.Gray, 1, 0.6)
+    
+    local label = Instance.new("TextLabel", container)
+    label.Size = UDim2.new(1, -14, 0, 18)
+    label.Position = UDim2.new(0, 7, 0, 5)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.TextColor3 = COLORS.LightGray
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 10
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 7
+    
+    local textBox = Instance.new("TextBox", container)
+    textBox.Size = UDim2.new(1, -14, 0, 28)
+    textBox.Position = UDim2.new(0, 7, 0, 26)
+    textBox.BackgroundColor3 = COLORS.Background
+    textBox.Text = EditorConfig[configKey] or ""
+    textBox.PlaceholderText = placeholder or ""
+    textBox.TextColor3 = COLORS.White
+    textBox.PlaceholderColor3 = COLORS.Gray
+    textBox.Font = Enum.Font.GothamBold
+    textBox.TextSize = 12
+    textBox.BorderSizePixel = 0
+    textBox.ClearTextOnFocus = false
+    textBox.ZIndex = 7
+    createCorner(textBox, 6)
+    createStroke(textBox, COLORS.Gray, 1, 0.7)
+    
+    textBox.FocusLost:Connect(function()
+        EditorConfig[configKey] = textBox.Text
+    end)
+    
+    return container
+end
+
+local function createColorPicker(parent, labelText, configKeyR, configKeyG, configKeyB, posY)
+    local container = Instance.new("Frame", parent)
+    container.Size = UDim2.new(1, -12, 0, 80)
+    container.Position = UDim2.new(0, 6, 0, posY)
+    container.BackgroundColor3 = COLORS.Frame
+    container.BorderSizePixel = 0
+    container.ZIndex = 6
+    createCorner(container, 10)
+    createStroke(container, COLORS.Gray, 1, 0.6)
+    
+    local label = Instance.new("TextLabel", container)
+    label.Size = UDim2.new(1, -14, 0, 18)
+    label.Position = UDim2.new(0, 7, 0, 4)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.TextColor3 = COLORS.White
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 11
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 7
+    
+    local colorPreview = Instance.new("Frame", container)
+    colorPreview.Size = UDim2.new(0, 48, 0, 48)
+    colorPreview.Position = UDim2.new(0, 7, 0, 26)
+    colorPreview.BackgroundColor3 = Color3.fromRGB(EditorConfig[configKeyR], EditorConfig[configKeyG], EditorConfig[configKeyB])
+    colorPreview.BorderSizePixel = 0
+    colorPreview.ZIndex = 7
+    createCorner(colorPreview, 10)
+    createStroke(colorPreview, COLORS.White, 2, 0)
+    
+    local presetContainer = Instance.new("Frame", container)
+    presetContainer.Size = UDim2.new(0, 340, 0, 48)
+    presetContainer.Position = UDim2.new(0, 62, 0, 26)
+    presetContainer.BackgroundTransparency = 1
+    presetContainer.ZIndex = 7
+    
+    for i, preset in ipairs(ColorPresets) do
+        local presetBtn = Instance.new("TextButton", presetContainer)
+        presetBtn.Size = UDim2.new(0, 30, 0, 20)
+        presetBtn.Position = UDim2.new(0, ((i-1) % 10) * 33, 0, math.floor((i-1) / 10) * 25)
+        presetBtn.Text = ""
+        presetBtn.BackgroundColor3 = Color3.fromRGB(preset.r, preset.g, preset.b)
+        presetBtn.BorderSizePixel = 0
+        presetBtn.ZIndex = 8
+        createCorner(presetBtn, 6)
+        
+        presetBtn.MouseButton1Click:Connect(function()
+            EditorConfig[configKeyR] = preset.r
+            EditorConfig[configKeyG] = preset.g
+            EditorConfig[configKeyB] = preset.b
+            tween(colorPreview, {BackgroundColor3 = Color3.fromRGB(preset.r, preset.g, preset.b)}, 0.2)
+            tween(presetBtn, {Size = UDim2.new(0, 26, 0, 16)}, 0.08)
+            task.wait(0.08)
+            tween(presetBtn, {Size = UDim2.new(0, 30, 0, 20)}, 0.08)
+        end)
+    end
+    
+    return container
+end
+
+-- INVERTED LOGIC: Green = OFF, Red X = ON (added)
+local function createFeatureToggle(parent, labelText, configKey, posY)
+    local isEnabled = EditorConfig[configKey]
+    
+    local container = Instance.new("Frame", parent)
+    container.Size = UDim2.new(1, -12, 0, 38)
+    container.Position = UDim2.new(0, 6, 0, posY)
+    -- Red background when ON, greenish when OFF
+    container.BackgroundColor3 = isEnabled and COLORS.ActiveRed or COLORS.ActiveGreen
+    container.BorderSizePixel = 0
+    container.ZIndex = 6
+    createCorner(container, 10)
+    
+    -- Red stroke when ON, green when OFF
+    local stroke = createStroke(container, isEnabled and COLORS.Red or COLORS.Green, 2, 0)
+    
+    local label = Instance.new("TextLabel", container)
+    label.Size = UDim2.new(1, -55, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.TextColor3 = COLORS.White
+    label.Font = Enum.Font.GothamSemibold
+    label.TextSize = 11
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 7
+    
+    local toggleBtn = Instance.new("Frame", container)
+    toggleBtn.Size = UDim2.new(0, 34, 0, 26)
+    toggleBtn.Position = UDim2.new(1, -40, 0.5, -13)
+    -- Red when ON, green when OFF
+    toggleBtn.BackgroundColor3 = isEnabled and COLORS.Red or COLORS.Green
+    toggleBtn.BorderSizePixel = 0
+    toggleBtn.ZIndex = 7
+    createCorner(toggleBtn, 8)
+    
+    local toggleIcon = Instance.new("TextLabel", toggleBtn)
+    toggleIcon.Size = UDim2.new(1, 0, 1, 0)
+    toggleIcon.BackgroundTransparency = 1
+    -- X when ON, checkmark when OFF
+    toggleIcon.Text = isEnabled and "×" or "✓"
+    toggleIcon.TextColor3 = COLORS.White
+    toggleIcon.Font = Enum.Font.GothamBold
+    toggleIcon.TextSize = 16
+    toggleIcon.ZIndex = 8
+    
+    local clickBtn = Instance.new("TextButton", container)
+    clickBtn.Size = UDim2.new(1, 0, 1, 0)
+    clickBtn.BackgroundTransparency = 1
+    clickBtn.Text = ""
+    clickBtn.ZIndex = 9
+    
+    clickBtn.MouseButton1Click:Connect(function()
+        EditorConfig[configKey] = not EditorConfig[configKey]
+        local nowEnabled = EditorConfig[configKey]
+        
+        if nowEnabled then
+            -- ON = Red X
+            tween(container, {BackgroundColor3 = COLORS.ActiveRed}, 0.2)
+            tween(toggleBtn, {BackgroundColor3 = COLORS.Red}, 0.2)
+            stroke.Color = COLORS.Red
+            toggleIcon.Text = "×"
+        else
+            -- OFF = Green checkmark
+            tween(container, {BackgroundColor3 = COLORS.ActiveGreen}, 0.2)
+            tween(toggleBtn, {BackgroundColor3 = COLORS.Green}, 0.2)
+            stroke.Color = COLORS.Green
+            toggleIcon.Text = "✓"
+        end
+    end)
+    
+    return container
+end
+
+local function createSectionHeader(parent, text, posY)
+    local headerFrame = Instance.new("Frame", parent)
+    headerFrame.Size = UDim2.new(1, -12, 0, 26)
+    headerFrame.Position = UDim2.new(0, 6, 0, posY)
+    headerFrame.BackgroundColor3 = COLORS.DarkBG
+    headerFrame.BorderSizePixel = 0
+    headerFrame.ZIndex = 6
+    createCorner(headerFrame, 8)
+    createStroke(headerFrame, COLORS.Gray, 1, 0.7)
+    
+    local headerText = Instance.new("TextLabel", headerFrame)
+    headerText.Size = UDim2.new(1, 0, 1, 0)
+    headerText.BackgroundTransparency = 1
+    headerText.Text = text
+    headerText.TextColor3 = COLORS.LightGray
+    headerText.Font = Enum.Font.GothamBold
+    headerText.TextSize = 10
+    headerText.ZIndex = 7
+    
+    return headerFrame
+end
+
+local function createIconToggle(parent, posY)
+    local container = Instance.new("Frame", parent)
+    container.Size = UDim2.new(1, -12, 0, 44)
+    container.Position = UDim2.new(0, 6, 0, posY)
+    container.BackgroundColor3 = COLORS.Frame
+    container.BorderSizePixel = 0
+    container.ZIndex = 6
+    createCorner(container, 10)
+    createStroke(container, COLORS.Gray, 1, 0.6)
+    
+    local label = Instance.new("TextLabel", container)
+    label.Size = UDim2.new(0, 120, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "Icon Type:"
+    label.TextColor3 = COLORS.White
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 11
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 7
+    
+    local customBtn = Instance.new("TextButton", container)
+    customBtn.Size = UDim2.new(0, 100, 0, 28)
+    customBtn.Position = UDim2.new(0, 130, 0.5, -14)
+    customBtn.Text = "CUSTOM ID"
+    customBtn.BackgroundColor3 = EditorConfig.UseCustomIcon and COLORS.White or COLORS.Frame
+    customBtn.TextColor3 = EditorConfig.UseCustomIcon and COLORS.Black or COLORS.LightGray
+    customBtn.Font = Enum.Font.GothamBold
+    customBtn.TextSize = 9
+    customBtn.BorderSizePixel = 0
+    customBtn.ZIndex = 7
+    createCorner(customBtn, 6)
+    
+    local letterBtn = Instance.new("TextButton", container)
+    letterBtn.Size = UDim2.new(0, 100, 0, 28)
+    letterBtn.Position = UDim2.new(0, 238, 0.5, -14)
+    letterBtn.Text = "LETTER"
+    letterBtn.BackgroundColor3 = EditorConfig.UseCustomIcon and COLORS.Frame or COLORS.White
+    letterBtn.TextColor3 = EditorConfig.UseCustomIcon and COLORS.LightGray or COLORS.Black
+    letterBtn.Font = Enum.Font.GothamBold
+    letterBtn.TextSize = 9
+    letterBtn.BorderSizePixel = 0
+    letterBtn.ZIndex = 7
+    createCorner(letterBtn, 6)
+    
+    customBtn.MouseButton1Click:Connect(function()
+        EditorConfig.UseCustomIcon = true
+        tween(customBtn, {BackgroundColor3 = COLORS.White, TextColor3 = COLORS.Black}, 0.2)
+        tween(letterBtn, {BackgroundColor3 = COLORS.Frame, TextColor3 = COLORS.LightGray}, 0.2)
+    end)
+    
+    letterBtn.MouseButton1Click:Connect(function()
+        EditorConfig.UseCustomIcon = false
+        tween(letterBtn, {BackgroundColor3 = COLORS.White, TextColor3 = COLORS.Black}, 0.2)
+        tween(customBtn, {BackgroundColor3 = COLORS.Frame, TextColor3 = COLORS.LightGray}, 0.2)
+    end)
+    
+    return container
+end
+
+-- ===== POPULATE TABS =====
+
+-- INFO TAB
+local infoContent = contentContainers["INFO"]
+createTextInput(infoContent, "SCRIPT NAME", "ScriptName", 6, "Enter script name...")
+createTextInput(infoContent, "SUBTITLE", "ScriptSubtitle", 74, "Enter subtitle...")
+
+createSectionHeader(infoContent, "TABS TO INCLUDE", 150)
+createFeatureToggle(infoContent, "AFK Tab", "AFKTab", 182)
+createFeatureToggle(infoContent, "MAIN Tab", "MainTab", 226)
+createFeatureToggle(infoContent, "ESP Tab", "ESPTab", 270)
+createFeatureToggle(infoContent, "FPS Tab", "FPSTab", 314)
+
+-- ICON TAB
+local iconContent = contentContainers["ICON"]
+createSectionHeader(iconContent, "ICON TYPE", 6)
+createIconToggle(iconContent, 38)
+
+createSectionHeader(iconContent, "CUSTOM ICON ID", 94)
+createTextInput(iconContent, "Roblox Asset ID", "IconId", 126, "Enter asset ID...")
+
+createSectionHeader(iconContent, "LETTER ICON (1-2 Letters)", 200)
+createTextInput(iconContent, "Letters (max 2)", "IconLetter", 232, "MH")
+
+createSectionHeader(iconContent, "LETTER COLOR", 306)
+createColorPicker(iconContent, "Letter Color", "IconLetterR", "IconLetterG", "IconLetterB", 338)
+
+-- COLORS TAB (Clear naming for users)
+local colorsContent = contentContainers["COLORS"]
+colorsContent.CanvasSize = UDim2.new(0, 0, 0, 540)
+createColorPicker(colorsContent, "Icon Border / Main Color", "PrimaryR", "PrimaryG", "PrimaryB", 6)
+createColorPicker(colorsContent, "Header Gradient Top", "SecondaryR", "SecondaryG", "SecondaryB", 92)
+createColorPicker(colorsContent, "Header Gradient Bottom", "AccentR", "AccentG", "AccentB", 178)
+createColorPicker(colorsContent, "Menu Background", "BackgroundR", "BackgroundG", "BackgroundB", 264)
+createColorPicker(colorsContent, "Tabs Background", "DarkBgR", "DarkBgG", "DarkBgB", 350)
+createColorPicker(colorsContent, "Content Boxes / Buttons", "FrameR", "FrameG", "FrameB", 436)
+
+-- AFK TAB
+local afkContent = contentContainers["AFK"]
+createSectionHeader(afkContent, "AFK TAB FEATURES", 6)
+createFeatureToggle(afkContent, "King Mode", "KingMode", 38)
+createFeatureToggle(afkContent, "Anti AFK", "AntiAFK", 82)
+
+-- MAIN TAB
+local mainContent = contentContainers["MAIN"]
+createSectionHeader(mainContent, "MAIN TAB FEATURES", 6)
+createFeatureToggle(mainContent, "Speed Boost", "SpeedBoost", 38)
+createFeatureToggle(mainContent, "Super Jump", "SuperJump", 82)
+createFeatureToggle(mainContent, "Walk Speed Slider", "WalkSpeedSlider", 126)
+createFeatureToggle(mainContent, "Jump Power Slider", "JumpPowerSlider", 170)
+
+-- ESP TAB
+local espContent = contentContainers["ESP"]
+createSectionHeader(espContent, "ESP TAB FEATURES", 6)
+createFeatureToggle(espContent, "Player ESP", "PlayerESP", 38)
+createFeatureToggle(espContent, "Show Names", "ESPNames", 82)
+createFeatureToggle(espContent, "Show Distance", "ESPDistance", 126)
+createFeatureToggle(espContent, "Tracers", "Tracers", 170)
+
+-- FPS TAB
+local fpsContent = contentContainers["FPS"]
+createSectionHeader(fpsContent, "FPS TAB FEATURES", 6)
+createFeatureToggle(fpsContent, "FPS Boost", "FPSBoost", 38)
+createFeatureToggle(fpsContent, "Disable Particles", "DisableParticles", 82)
+createFeatureToggle(fpsContent, "Show FPS Counter", "ShowFPS", 126)
+
+-- GENERATE TAB
+local generateContent = contentContainers["GENERATE"]
+
+local generateInfo = Instance.new("TextLabel", generateContent)
+generateInfo.Size = UDim2.new(1, -12, 0, 50)
+generateInfo.Position = UDim2.new(0, 6, 0, 6)
+generateInfo.BackgroundColor3 = COLORS.Frame
+generateInfo.Text = "Generate your script and copy it!\nRed × = Feature ENABLED | Green ✓ = Feature DISABLED"
+generateInfo.TextColor3 = COLORS.LightGray
+generateInfo.Font = Enum.Font.Gotham
+generateInfo.TextSize = 10
+generateInfo.TextWrapped = true
+generateInfo.ZIndex = 6
+createCorner(generateInfo, 10)
+createStroke(generateInfo, COLORS.Gray, 1, 0.6)
+
+local generateBtn = Instance.new("TextButton", generateContent)
+generateBtn.Size = UDim2.new(0.48, -4, 0, 42)
+generateBtn.Position = UDim2.new(0, 6, 0, 62)
+generateBtn.Text = "⚡ GENERATE"
+generateBtn.BackgroundColor3 = COLORS.Green
+generateBtn.TextColor3 = COLORS.White
+generateBtn.Font = Enum.Font.GothamBold
+generateBtn.TextSize = 13
+generateBtn.BorderSizePixel = 0
+generateBtn.ZIndex = 6
+createCorner(generateBtn, 10)
+
+local copyBtn = Instance.new("TextButton", generateContent)
+copyBtn.Size = UDim2.new(0.48, -4, 0, 42)
+copyBtn.Position = UDim2.new(0.5, 2, 0, 62)
+copyBtn.Text = "📋 COPY CODE"
+copyBtn.BackgroundColor3 = COLORS.Frame
+copyBtn.TextColor3 = COLORS.Gray
+copyBtn.Font = Enum.Font.GothamBold
+copyBtn.TextSize = 13
+copyBtn.BorderSizePixel = 0
+copyBtn.ZIndex = 6
+createCorner(copyBtn, 10)
+createStroke(copyBtn, COLORS.Gray, 1, 0.5)
+
+local outputLabel = Instance.new("TextLabel", generateContent)
+outputLabel.Size = UDim2.new(1, -12, 0, 18)
+outputLabel.Position = UDim2.new(0, 6, 0, 112)
+outputLabel.BackgroundTransparency = 1
+outputLabel.Text = "Preview:"
+outputLabel.TextColor3 = COLORS.LightGray
+outputLabel.Font = Enum.Font.GothamBold
+outputLabel.TextSize = 10
+outputLabel.TextXAlignment = Enum.TextXAlignment.Left
+outputLabel.ZIndex = 6
+
+local outputBox = Instance.new("TextLabel", generateContent)
+outputBox.Size = UDim2.new(1, -12, 0, 140)
+outputBox.Position = UDim2.new(0, 6, 0, 132)
+outputBox.BackgroundColor3 = COLORS.Background
+outputBox.Text = "Click GENERATE to create your script..."
+outputBox.TextColor3 = COLORS.Gray
+outputBox.Font = Enum.Font.Code
+outputBox.TextSize = 9
+outputBox.TextWrapped = true
+outputBox.TextXAlignment = Enum.TextXAlignment.Left
+outputBox.TextYAlignment = Enum.TextYAlignment.Top
+outputBox.BorderSizePixel = 0
+outputBox.ZIndex = 6
+createCorner(outputBox, 10)
+createStroke(outputBox, COLORS.Gray, 1, 0.6)
+
+local outputPadding = Instance.new("UIPadding", outputBox)
+outputPadding.PaddingLeft = UDim.new(0, 8)
+outputPadding.PaddingTop = UDim.new(0, 8)
+outputPadding.PaddingRight = UDim.new(0, 8)
+
+-- ===== GENERATE FUNCTION =====
+local function generateScriptCode()
+    local c = EditorConfig
+    
+    local enabledTabs = {}
+    if c.AFKTab then table.insert(enabledTabs, '"AFK"') end
+    if c.MainTab then table.insert(enabledTabs, '"MAIN"') end
+    if c.ESPTab then table.insert(enabledTabs, '"ESP"') end
+    if c.FPSTab then table.insert(enabledTabs, '"FPS"') end
+    
+    if #enabledTabs == 0 then
+        notify("Enable at least one tab!")
+        return nil
+    end
+    
+    local configLines = {}
+    if c.KingMode then table.insert(configLines, "    KingMode = false,") end
+    if c.AntiAFK then table.insert(configLines, "    AntiAFK = false,") end
+    if c.WalkSpeedSlider then table.insert(configLines, "    WalkSpeed = 50,") end
+    if c.JumpPowerSlider then table.insert(configLines, "    JumpPower = 150,") end
+    if c.SpeedBoost then table.insert(configLines, "    SpeedBoost = false,") end
+    if c.SuperJump then table.insert(configLines, "    SuperJump = false,") end
+    if c.PlayerESP then table.insert(configLines, "    PlayerESP = false,") end
+    if c.ESPNames then table.insert(configLines, "    ESPNames = false,") end
+    if c.ESPDistance then table.insert(configLines, "    ESPDistance = false,") end
+    if c.Tracers then table.insert(configLines, "    Tracers = false,") end
+    if c.FPSBoost then table.insert(configLines, "    FPSBoost = false,") end
+    if c.DisableParticles then table.insert(configLines, "    DisableParticles = false,") end
+    if c.ShowFPS then table.insert(configLines, "    ShowFPS = false,") end
+
+    -- Icon code
+    local iconCode = ""
+    local letterToUse = c.IconLetter:sub(1,2):upper()
+    if letterToUse == "" then letterToUse = "M" end
+    
+    if c.UseCustomIcon and c.IconId ~= "" then
+        iconCode = [[
+local iconBtn = Instance.new("ImageButton")
+iconBtn.Name = "Icon"
+iconBtn.Size = UDim2.new(0, 70, 0, 70)
+iconBtn.Position = UDim2.new(0, 20, 0, 20)
+iconBtn.BackgroundColor3 = COLORS.Background
+iconBtn.BorderSizePixel = 0
+iconBtn.Image = "rbxassetid://]] .. c.IconId .. [["
+iconBtn.ScaleType = Enum.ScaleType.Fit
+iconBtn.Active = true
+iconBtn.Draggable = true
+iconBtn.Parent = screenGui
+createCorner(iconBtn, 14)
+createStroke(iconBtn, COLORS.Primary, 3)
+
+local topIcon = Instance.new("ImageLabel")
+topIcon.Size = UDim2.new(0, 35, 0, 35)
+topIcon.Position = UDim2.new(0, 8, 0.5, -17.5)
+topIcon.BackgroundColor3 = COLORS.Background
+topIcon.Image = "rbxassetid://]] .. c.IconId .. [["
+topIcon.ScaleType = Enum.ScaleType.Fit
+topIcon.BorderSizePixel = 0
+topIcon.Parent = topBar
+createCorner(topIcon, 8)]]
+    else
+        iconCode = [[
+local iconBtn = Instance.new("TextButton")
+iconBtn.Name = "Icon"
+iconBtn.Size = UDim2.new(0, 70, 0, 70)
+iconBtn.Position = UDim2.new(0, 20, 0, 20)
+iconBtn.BackgroundColor3 = COLORS.Background
+iconBtn.BorderSizePixel = 0
+iconBtn.Text = "]] .. letterToUse .. [["
+iconBtn.TextColor3 = Color3.fromRGB(]] .. c.IconLetterR .. [[, ]] .. c.IconLetterG .. [[, ]] .. c.IconLetterB .. [[)
+iconBtn.Font = Enum.Font.GothamBlack
+iconBtn.TextSize = ]] .. (#letterToUse > 1 and "24" or "32") .. [[
+
+iconBtn.Active = true
+iconBtn.Draggable = true
+iconBtn.Parent = screenGui
+createCorner(iconBtn, 14)
+createStroke(iconBtn, COLORS.Primary, 3)
+
+local topIcon = Instance.new("TextLabel")
+topIcon.Size = UDim2.new(0, 35, 0, 35)
+topIcon.Position = UDim2.new(0, 8, 0.5, -17.5)
+topIcon.BackgroundColor3 = COLORS.Background
+topIcon.Text = "]] .. letterToUse .. [["
+topIcon.TextColor3 = Color3.fromRGB(]] .. c.IconLetterR .. [[, ]] .. c.IconLetterG .. [[, ]] .. c.IconLetterB .. [[)
+topIcon.Font = Enum.Font.GothamBlack
+topIcon.TextSize = ]] .. (#letterToUse > 1 and "12" or "18") .. [[
+
+topIcon.BorderSizePixel = 0
+topIcon.Parent = topBar
+createCorner(topIcon, 8)]]
+    end
+
+    -- Build toggles
+    local afkToggles, mainToggles, espToggles, fpsToggles = "", "", "", ""
+    local afkPosY, mainPosY, espPosY, fpsPosY = 6, 6, 6, 6
+    
+    if c.AFKTab then
+        if c.KingMode then
+            afkToggles = afkToggles .. 'createToggle(afkContent, "King Mode", "KingMode", ' .. afkPosY .. ')\n'
+            afkPosY = afkPosY + 34
+        end
+        if c.AntiAFK then
+            afkToggles = afkToggles .. 'createToggle(afkContent, "Anti AFK", "AntiAFK", ' .. afkPosY .. ')\n'
+        end
+    end
+    
+    if c.MainTab then
+        if c.SpeedBoost then
+            mainToggles = mainToggles .. 'createToggle(mainContent, "Speed Boost", "SpeedBoost", ' .. mainPosY .. ')\n'
+            mainPosY = mainPosY + 34
+        end
+        if c.SuperJump then
+            mainToggles = mainToggles .. 'createToggle(mainContent, "Super Jump", "SuperJump", ' .. mainPosY .. ')\n'
+            mainPosY = mainPosY + 34
+        end
+        if c.WalkSpeedSlider then
+            mainToggles = mainToggles .. 'createSlider(mainContent, "Walk Speed", "WalkSpeed", 16, 200, ' .. mainPosY .. ')\n'
+            mainPosY = mainPosY + 56
+        end
+        if c.JumpPowerSlider then
+            mainToggles = mainToggles .. 'createSlider(mainContent, "Jump Power", "JumpPower", 50, 300, ' .. mainPosY .. ')\n'
+        end
+    end
+    
+    if c.ESPTab then
+        if c.PlayerESP then
+            espToggles = espToggles .. [[createToggle(espContent, "Player ESP", "PlayerESP", ]] .. espPosY .. [[, function(enabled)
+    if enabled then
+        for _, plr in pairs(game.Players:GetPlayers()) do
+            if plr ~= player and plr.Character then createPlayerESP(plr) end
+        end
+    else
+        for plr, _ in pairs(playerESPCache) do clearPlayerESP(plr) end
+    end
+end)
+]]
+            espPosY = espPosY + 34
+        end
+        if c.ESPNames then
+            espToggles = espToggles .. 'createToggle(espContent, "Show Names", "ESPNames", ' .. espPosY .. ', function() if CONFIG.PlayerESP then updateAllPlayerESP() end end)\n'
+            espPosY = espPosY + 34
+        end
+        if c.ESPDistance then
+            espToggles = espToggles .. 'createToggle(espContent, "Show Distance", "ESPDistance", ' .. espPosY .. ', function() if CONFIG.PlayerESP then updateAllPlayerESP() end end)\n'
+            espPosY = espPosY + 34
+        end
+        if c.Tracers then
+            espToggles = espToggles .. 'createToggle(espContent, "Tracers", "Tracers", ' .. espPosY .. ', function() if CONFIG.PlayerESP then updateAllPlayerESP() end end)\n'
+        end
+    end
+    
+    if c.FPSTab then
+        if c.FPSBoost then
+            fpsToggles = fpsToggles .. [[createToggle(fpsContent, "FPS Boost", "FPSBoost", ]] .. fpsPosY .. [[, function(enabled)
+    local lighting = game:GetService("Lighting")
+    if enabled then
+        lighting.GlobalShadows = false
+        lighting.Technology = Enum.Technology.Compatibility
+        for _, e in pairs(lighting:GetChildren()) do if e:IsA("PostEffect") then e.Enabled = false end end
+    else
+        lighting.GlobalShadows = true
+        lighting.Technology = Enum.Technology.ShadowMap
+        for _, e in pairs(lighting:GetChildren()) do if e:IsA("PostEffect") then e.Enabled = true end end
+    end
+end)
+]]
+            fpsPosY = fpsPosY + 34
+        end
+        if c.DisableParticles then
+            fpsToggles = fpsToggles .. [[createToggle(fpsContent, "Disable Particles", "DisableParticles", ]] .. fpsPosY .. [[, function(enabled)
+    for _, obj in pairs(workspace:GetDescendants()) do
+        pcall(function()
+            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") then
+                obj.Enabled = not enabled
+            end
+        end)
+    end
+end)
+]]
+            fpsPosY = fpsPosY + 34
+        end
+        if c.ShowFPS then
+            fpsToggles = fpsToggles .. 'createToggle(fpsContent, "Show FPS", "ShowFPS", ' .. fpsPosY .. ', function(enabled) fpsCounter.Visible = enabled end)\n'
+        end
+    end
+    
+    -- ESP Functions
+    local espFunctions = ""
+    if c.PlayerESP or c.ESPNames or c.ESPDistance or c.Tracers then
+        espFunctions = [[
+
+local function clearPlayerESP(plr)
+    pcall(function()
+        if playerESPCache[plr] then
+            for _, obj in pairs(playerESPCache[plr]) do pcall(function() obj:Destroy() end) end
+            playerESPCache[plr] = nil
+        end
+    end)
+end
+
+local function createPlayerESP(targetPlayer)
+    if targetPlayer == player or not CONFIG.PlayerESP then return end
+    task.spawn(function()
+        pcall(function()
+            local char = targetPlayer.Character
+            if not char then return end
+            clearPlayerESP(targetPlayer)
+            playerESPCache[targetPlayer] = {}
+            local highlight = Instance.new("Highlight", char)
+            highlight.FillColor = COLORS.Primary
+            highlight.OutlineColor = COLORS.White
+            highlight.FillTransparency = 0.5
+            table.insert(playerESPCache[targetPlayer], highlight)]] ..
+            ((c.ESPNames or c.ESPDistance) and [[
+            local head = char:FindFirstChild("Head")
+            if head then
+                local billboard = Instance.new("BillboardGui", char)
+                billboard.Adornee = head
+                billboard.Size = UDim2.new(0, 200, 0, 60)
+                billboard.StudsOffset = Vector3.new(0, 2, 0)
+                billboard.AlwaysOnTop = true]] ..
+                (c.ESPNames and [[
+                local nameLabel = Instance.new("TextLabel", billboard)
+                nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Text = targetPlayer.Name
+                nameLabel.TextColor3 = COLORS.Primary
+                nameLabel.Font = Enum.Font.GothamBold
+                nameLabel.TextSize = 16
+                nameLabel.TextStrokeTransparency = 0.5
+                nameLabel.Visible = CONFIG.ESPNames]] or "") ..
+                (c.ESPDistance and [[
+                local distLabel = Instance.new("TextLabel", billboard)
+                distLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                distLabel.Position = UDim2.new(0, 0, 0.5, 0)
+                distLabel.BackgroundTransparency = 1
+                distLabel.Text = ""
+                distLabel.TextColor3 = COLORS.Green
+                distLabel.Font = Enum.Font.GothamBold
+                distLabel.TextSize = 14
+                distLabel.TextStrokeTransparency = 0.5
+                distLabel.Visible = CONFIG.ESPDistance]] or "") .. [[
+                table.insert(playerESPCache[targetPlayer], billboard)
+                connections["pESP_" .. targetPlayer.Name] = RunService.Heartbeat:Connect(function()
+                    pcall(function()
+                        if not billboard.Parent or not CONFIG.PlayerESP then clearPlayerESP(targetPlayer) return end]] ..
+                        (c.ESPNames and " nameLabel.Visible = CONFIG.ESPNames" or "") ..
+                        (c.ESPDistance and [[
+                        distLabel.Visible = CONFIG.ESPDistance
+                        if CONFIG.ESPDistance and player.Character then
+                            local myHRP = player.Character:FindFirstChild("HumanoidRootPart")
+                            local theirHRP = char:FindFirstChild("HumanoidRootPart")
+                            if myHRP and theirHRP then distLabel.Text = "[" .. math.floor((myHRP.Position - theirHRP.Position).Magnitude) .. "]" end
+                        end]] or "") .. [[
+                    end)
+                end)
+            end]] or "") ..
+            (c.Tracers and [[
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local myHRP = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if hrp and myHRP then
+                local a1 = Instance.new("Attachment", hrp)
+                local a2 = Instance.new("Attachment", myHRP)
+                local beam = Instance.new("Beam", a1)
+                beam.Attachment0 = a1
+                beam.Attachment1 = a2
+                beam.Color = ColorSequence.new(COLORS.Primary)
+                beam.FaceCamera = true
+                beam.Width0 = 0.15
+                beam.Width1 = 0.15
+                table.insert(playerESPCache[targetPlayer], a1)
+                table.insert(playerESPCache[targetPlayer], a2)
+                table.insert(playerESPCache[targetPlayer], beam)
+            end]] or "") .. [[
+        end)
+    end)
+end
+
+local function updateAllPlayerESP()
+    for plr, _ in pairs(playerESPCache) do clearPlayerESP(plr) end
+    if CONFIG.PlayerESP then
+        for _, plr in pairs(game.Players:GetPlayers()) do
+            if plr ~= player and plr.Character then createPlayerESP(plr) end
+        end
+    end
+end]]
+    end
+    
+    local espEvents = c.PlayerESP and [[
+
+game.Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function() task.wait(1) if CONFIG.PlayerESP then createPlayerESP(plr) end end)
+end)
+game.Players.PlayerRemoving:Connect(function(plr)
+    clearPlayerESP(plr)
+    if connections["pESP_" .. plr.Name] then connections["pESP_" .. plr.Name]:Disconnect() end
+end)]] or ""
+    
+    local fpsCounterCode = c.ShowFPS and [[
+
+local fpsCounter = Instance.new("Frame")
+fpsCounter.Size = UDim2.new(0, 80, 0, 30)
+fpsCounter.Position = UDim2.new(1, -90, 0, 10)
+fpsCounter.BackgroundColor3 = COLORS.Background
+fpsCounter.BorderSizePixel = 0
+fpsCounter.Visible = false
+fpsCounter.Active = true
+fpsCounter.Draggable = true
+fpsCounter.Parent = screenGui
+createCorner(fpsCounter, 8)
+createStroke(fpsCounter, COLORS.Primary, 2)
+
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(1, 0, 1, 0)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.Text = "FPS: 0"
+fpsLabel.Font = Enum.Font.GothamBold
+fpsLabel.TextSize = 12
+fpsLabel.TextColor3 = COLORS.Primary
+fpsLabel.Parent = fpsCounter]] or ""
+    
+    local fpsCounterLoop = c.ShowFPS and [[
+
+local lastUpdate, frames = tick(), 0
+connections.fps = RunService.RenderStepped:Connect(function()
+    frames = frames + 1
+    if tick() - lastUpdate >= 1 then
+        fpsLabel.Text = "FPS: " .. frames
+        fpsLabel.TextColor3 = frames >= 60 and COLORS.Green or (frames >= 30 and COLORS.Primary or COLORS.Red)
+        frames = 0
+        lastUpdate = tick()
+    end
+end)]] or ""
+    
+    local mainLoopCode = (c.KingMode or c.SpeedBoost) and [[
+
+connections.main = RunService.Heartbeat:Connect(function()
+    pcall(function()
+        local char = player.Character
+        if not char then return end
+        local hum = char:FindFirstChildWhichIsA("Humanoid")
+        if not hum then return end]] ..
+        (c.KingMode and [[
+        if CONFIG.KingMode then hum.Health = hum.MaxHealth hum.MaxHealth = 999999 end]] or "") ..
+        (c.SpeedBoost and [[
+        if CONFIG.SpeedBoost then hum.WalkSpeed = CONFIG.WalkSpeed end]] or "") .. [[
+    end)
+end)]] or ""
+    
+    local superJumpCode = c.SuperJump and [[
+
+connections.superJump = UserInputService.JumpRequest:Connect(function()
+    if not CONFIG.SuperJump then return end
+    pcall(function()
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChildWhichIsA("Humanoid")
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hum and hrp then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                task.wait(0.05)
+                hrp.Velocity = Vector3.new(hrp.Velocity.X, CONFIG.JumpPower, hrp.Velocity.Z)
+            end
+        end
+    end)
+end)]] or ""
+    
+    local charAddedCode = c.PlayerESP and [[
+
+player.CharacterAdded:Connect(function()
+    task.wait(1)
+    if CONFIG.PlayerESP then
+        for _, plr in pairs(game.Players:GetPlayers()) do
+            if plr ~= player and plr.Character then createPlayerESP(plr) end
+        end
+    end
+end)]] or ""
+
+    local firstTab = c.AFKTab and "AFK" or (c.MainTab and "MAIN" or (c.ESPTab and "ESP" or "FPS"))
+
+    local script = [[-- ]] .. c.ScriptName .. [[ - ]] .. c.ScriptSubtitle .. [[
+
+-- Generated with PELI EDITOR v3
+
+local player = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local VirtualUser = game:GetService("VirtualUser")
+player.Idled:Connect(function() VirtualUser:CaptureController() VirtualUser:ClickButton2(Vector2.new()) end)
+
+local CONFIG = {
+]] .. table.concat(configLines, "\n") .. [[
+
+}
+
+local playerESPCache = {}
+local currentTab = "]] .. firstTab .. [["
+local connections = {}
+
+local COLORS = {
+    Primary = Color3.fromRGB(]] .. c.PrimaryR .. [[, ]] .. c.PrimaryG .. [[, ]] .. c.PrimaryB .. [[),
+    Secondary = Color3.fromRGB(]] .. c.SecondaryR .. [[, ]] .. c.SecondaryG .. [[, ]] .. c.SecondaryB .. [[),
+    Accent = Color3.fromRGB(]] .. c.AccentR .. [[, ]] .. c.AccentG .. [[, ]] .. c.AccentB .. [[),
+    Background = Color3.fromRGB(]] .. c.BackgroundR .. [[, ]] .. c.BackgroundG .. [[, ]] .. c.BackgroundB .. [[),
+    DarkBG = Color3.fromRGB(]] .. c.DarkBgR .. [[, ]] .. c.DarkBgG .. [[, ]] .. c.DarkBgB .. [[),
+    Frame = Color3.fromRGB(]] .. c.FrameR .. [[, ]] .. c.FrameG .. [[, ]] .. c.FrameB .. [[),
+    White = Color3.fromRGB(255, 255, 255),
+    Gray = Color3.fromRGB(60, 60, 60),
+    Green = Color3.fromRGB(50, 205, 50),
+    Red = Color3.fromRGB(255, 50, 50)
+}
+
+local function tween(obj, props, duration, style, direction)
+    if not obj or not obj.Parent then return end
+    pcall(function() TweenService:Create(obj, TweenInfo.new(duration or 0.3, style or Enum.EasingStyle.Quad, direction or Enum.EasingDirection.Out), props):Play() end)
+end
+
+local function notifyImportant(text)
+    pcall(function() game.StarterGui:SetCore("SendNotification", {Title = "]] .. c.ScriptName .. [[", Text = text, Duration = 3}) end)
+end
+
+local function createCorner(parent, radius)
+    local corner = Instance.new("UICorner", parent)
+    corner.CornerRadius = UDim.new(0, radius or 10)
+    return corner
+end
+
+local function createStroke(parent, color, thickness)
+    local stroke = Instance.new("UIStroke", parent)
+    stroke.Color = color or COLORS.Primary
+    stroke.Thickness = thickness or 2
+    return stroke
+end
+
+local function createGradient(parent, colors, rotation)
+    local gradient = Instance.new("UIGradient", parent)
+    gradient.Color = colors
+    gradient.Rotation = rotation or 0
+    return gradient
+end
+]] .. espFunctions .. [[
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "]] .. c.ScriptName:gsub("%s", "_") .. [["
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = game.CoreGui
+
+]] .. iconCode .. [[
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "Main"
+mainFrame.Size = UDim2.new(0, 260, 0, 240)
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -120)
+mainFrame.BackgroundColor3 = COLORS.Background
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Visible = false
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = screenGui
+createCorner(mainFrame, 15)
+createStroke(mainFrame, COLORS.Primary, 3)
+
+local topBar = Instance.new("Frame")
+topBar.Size = UDim2.new(1, 0, 0, 50)
+topBar.BackgroundColor3 = COLORS.Primary
+topBar.BorderSizePixel = 0
+topBar.Parent = mainFrame
+createCorner(topBar, 15)
+createGradient(topBar, ColorSequence.new{ColorSequenceKeypoint.new(0, COLORS.Accent), ColorSequenceKeypoint.new(1, COLORS.Secondary)}, 90)
+
+local topCover = Instance.new("Frame")
+topCover.Size = UDim2.new(1, 0, 0, 15)
+topCover.Position = UDim2.new(0, 0, 1, -15)
+topCover.BackgroundColor3 = COLORS.Primary
+topCover.BorderSizePixel = 0
+topCover.Parent = topBar
+createGradient(topCover, ColorSequence.new{ColorSequenceKeypoint.new(0, COLORS.Accent), ColorSequenceKeypoint.new(1, COLORS.Secondary)}, 90)
+
+topIcon.Parent = topBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(0, 150, 0, 20)
+titleLabel.Position = UDim2.new(0, 50, 0, 8)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "]] .. c.ScriptName .. [["
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 16
+titleLabel.TextColor3 = COLORS.White
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = topBar
+
+local subtitleLabel = Instance.new("TextLabel")
+subtitleLabel.Size = UDim2.new(0, 150, 0, 16)
+subtitleLabel.Position = UDim2.new(0, 50, 0, 28)
+subtitleLabel.BackgroundTransparency = 1
+subtitleLabel.Text = "]] .. c.ScriptSubtitle .. [["
+subtitleLabel.Font = Enum.Font.Gotham
+subtitleLabel.TextSize = 9
+subtitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+subtitleLabel.Parent = topBar
+
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+minimizeBtn.Position = UDim2.new(1, -60, 0.5, -12.5)
+minimizeBtn.Text = "—"
+minimizeBtn.BackgroundColor3 = COLORS.Background
+minimizeBtn.TextColor3 = COLORS.White
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextSize = 16
+minimizeBtn.BorderSizePixel = 0
+minimizeBtn.Parent = topBar
+createCorner(minimizeBtn, 6)
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 25, 0, 25)
+closeBtn.Position = UDim2.new(1, -30, 0.5, -12.5)
+closeBtn.Text = "×"
+closeBtn.BackgroundColor3 = COLORS.Background
+closeBtn.TextColor3 = COLORS.White
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 20
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = topBar
+createCorner(closeBtn, 6)
+
+local tabContainer = Instance.new("Frame")
+tabContainer.Size = UDim2.new(1, -16, 0, 30)
+tabContainer.Position = UDim2.new(0, 8, 0, 58)
+tabContainer.BackgroundTransparency = 1
+tabContainer.Parent = mainFrame
+
+local tabButtons = {}
+local tabs = {]] .. table.concat(enabledTabs, ", ") .. [[}
+local tabWidth = (260 - 24) / #tabs
+
+for i, tabName in ipairs(tabs) do
+    local btn = Instance.new("TextButton")
+    btn.Name = tabName
+    btn.Size = UDim2.new(0, tabWidth - 4, 0, 30)
+    btn.Position = UDim2.new(0, (i - 1) * tabWidth + 2, 0, 0)
+    btn.Text = tabName
+    btn.BackgroundColor3 = (i == 1) and COLORS.Primary or COLORS.DarkBG
+    btn.TextColor3 = COLORS.White
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 11
+    btn.BorderSizePixel = 0
+    btn.Parent = tabContainer
+    createCorner(btn, 8)
+    tabButtons[tabName] = btn
+end
+
+local contentFrame = Instance.new("Frame")
+contentFrame.Size = UDim2.new(1, -16, 1, -100)
+contentFrame.Position = UDim2.new(0, 8, 0, 92)
+contentFrame.BackgroundTransparency = 1
+contentFrame.Parent = mainFrame
+
+local contentContainers = {}
+for i, tabName in ipairs(tabs) do
+    local container = Instance.new("ScrollingFrame")
+    container.Name = tabName
+    container.Size = UDim2.new(1, 0, 1, 0)
+    container.BackgroundTransparency = 1
+    container.BorderSizePixel = 0
+    container.ScrollBarThickness = 4
+    container.ScrollBarImageColor3 = COLORS.Primary
+    container.Visible = (i == 1)
+    container.CanvasSize = UDim2.new(0, 0, 0, 500)
+    container.Parent = contentFrame
+    contentContainers[tabName] = container
+end
+
+local function createToggle(parent, text, key, posY, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -8, 0, 28)
+    container.Position = UDim2.new(0, 4, 0, posY)
+    container.BackgroundColor3 = COLORS.Frame
+    container.BorderSizePixel = 0
+    container.Parent = parent
+    createCorner(container, 8)
+    createStroke(container, COLORS.Primary, 1)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -50, 1, 0)
+    label.Position = UDim2.new(0, 8, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.Font = Enum.Font.GothamSemibold
+    label.TextSize = 10
+    label.TextColor3 = COLORS.White
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+    local toggleBtn = Instance.new("Frame")
+    toggleBtn.Size = UDim2.new(0, 40, 0, 20)
+    toggleBtn.Position = UDim2.new(1, -44, 0.5, -10)
+    toggleBtn.BackgroundColor3 = COLORS.Gray
+    toggleBtn.BorderSizePixel = 0
+    toggleBtn.Parent = container
+    createCorner(toggleBtn, 10)
+    local indicator = Instance.new("Frame")
+    indicator.Size = UDim2.new(0, 16, 0, 16)
+    indicator.Position = UDim2.new(0, 2, 0.5, -8)
+    indicator.BackgroundColor3 = COLORS.White
+    indicator.BorderSizePixel = 0
+    indicator.Parent = toggleBtn
+    createCorner(indicator, 8)
+    local clickBtn = Instance.new("TextButton")
+    clickBtn.Size = UDim2.new(1, 0, 1, 0)
+    clickBtn.BackgroundTransparency = 1
+    clickBtn.Text = ""
+    clickBtn.Parent = container
+    clickBtn.MouseButton1Click:Connect(function()
+        CONFIG[key] = not CONFIG[key]
+        if CONFIG[key] then
+            tween(indicator, {Position = UDim2.new(1, -18, 0.5, -8), BackgroundColor3 = COLORS.Primary}, 0.2)
+            tween(toggleBtn, {BackgroundColor3 = COLORS.Primary}, 0.2)
+        else
+            tween(indicator, {Position = UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = COLORS.White}, 0.2)
+            tween(toggleBtn, {BackgroundColor3 = COLORS.Gray}, 0.2)
+        end
+        if callback then task.spawn(function() pcall(callback, CONFIG[key]) end) end
+    end)
+    return container
+end
+
+local function createSlider(parent, text, key, min, max, posY, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -8, 0, 50)
+    container.Position = UDim2.new(0, 4, 0, posY)
+    container.BackgroundColor3 = COLORS.Frame
+    container.BorderSizePixel = 0
+    container.Parent = parent
+    createCorner(container, 8)
+    createStroke(container, COLORS.Primary, 1)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -12, 0, 20)
+    label.Position = UDim2.new(0, 8, 0, 4)
+    label.BackgroundTransparency = 1
+    label.Text = text .. ": " .. CONFIG[key]
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 10
+    label.TextColor3 = COLORS.White
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Size = UDim2.new(1, -16, 0, 10)
+    sliderBg.Position = UDim2.new(0, 8, 0, 32)
+    sliderBg.BackgroundColor3 = COLORS.Gray
+    sliderBg.BorderSizePixel = 0
+    sliderBg.Parent = container
+    createCorner(sliderBg, 5)
+    local sliderFill = Instance.new("Frame")
+    local percentage = (CONFIG[key] - min) / (max - min)
+    sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+    sliderFill.BackgroundColor3 = COLORS.Primary
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Parent = sliderBg
+    createCorner(sliderFill, 5)
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = UDim2.new(percentage, -8, 0.5, -8)
+    knob.BackgroundColor3 = COLORS.White
+    knob.BorderSizePixel = 0
+    knob.Parent = sliderBg
+    createCorner(knob, 8)
+    createStroke(knob, COLORS.Primary, 2)
+    local dragging = false
+    local function update(input)
+        pcall(function()
+            local pos = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+            local value = math.floor(min + (max - min) * pos)
+            CONFIG[key] = value
+            label.Text = text .. ": " .. value
+            sliderFill.Size = UDim2.new(pos, 0, 1, 0)
+            knob.Position = UDim2.new(pos, -8, 0.5, -8)
+            if callback then task.spawn(function() pcall(callback, value) end) end
+        end)
+    end
+    sliderBg.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true update(input) end end)
+    sliderBg.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
+    UserInputService.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then update(input) end end)
+    return container
+end
+]] .. fpsCounterCode .. [[
+
+]] .. (c.AFKTab and #afkToggles > 0 and "local afkContent = contentContainers[\"AFK\"]\n" .. afkToggles or "") .. [[
+]] .. (c.MainTab and #mainToggles > 0 and "local mainContent = contentContainers[\"MAIN\"]\n" .. mainToggles or "") .. [[
+]] .. (c.ESPTab and #espToggles > 0 and "local espContent = contentContainers[\"ESP\"]\n" .. espToggles or "") .. [[
+]] .. (c.FPSTab and #fpsToggles > 0 and "local fpsContent = contentContainers[\"FPS\"]\n" .. fpsToggles or "") .. [[
+
+for tabName, btn in pairs(tabButtons) do
+    btn.MouseButton1Click:Connect(function()
+        currentTab = tabName
+        for name, button in pairs(tabButtons) do button.BackgroundColor3 = (name == tabName) and COLORS.Primary or COLORS.DarkBG end
+        for name, container in pairs(contentContainers) do container.Visible = (name == tabName) end
+    end)
+end
+
+local menuOpen = false
+iconBtn.MouseButton1Click:Connect(function()
+    menuOpen = not menuOpen
+    if menuOpen then
+        mainFrame.Size = UDim2.new(0, 0, 0, 0)
+        mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        mainFrame.Visible = true
+        tween(mainFrame, {Size = UDim2.new(0, 260, 0, 240), Position = UDim2.new(0.5, -130, 0.5, -120)}, 0.4, Enum.EasingStyle.Back)
+        notifyImportant("Menu Opened!")
+    else
+        tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.3)
+        task.wait(0.3)
+        mainFrame.Visible = false
+    end
+end)
+
+minimizeBtn.MouseButton1Click:Connect(function()
+    menuOpen = false
+    tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.3)
+    task.wait(0.3)
+    mainFrame.Visible = false
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    notifyImportant("Closed!")
+    tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.3)
+    ]] .. (c.ShowFPS and "if fpsCounter.Visible then tween(fpsCounter, {Size = UDim2.new(0, 0, 0, 0)}, 0.3) end" or "") .. [[
+    tween(iconBtn, {Size = UDim2.new(0, 0, 0, 0)}, 0.3)
+    task.wait(0.4)
+    for _, conn in pairs(connections) do if conn then pcall(function() conn:Disconnect() end) end end
+    pcall(function() screenGui:Destroy() end)
+end)
+]] .. mainLoopCode .. superJumpCode .. fpsCounterLoop .. espEvents .. charAddedCode .. [[
+
+print("]] .. c.ScriptName .. [[ Loaded!")
+notifyImportant("Loaded!")]]
+
+    return script
+end
+
+-- Generate button
+generateBtn.MouseButton1Click:Connect(function()
+    tween(generateBtn, {Size = UDim2.new(0.46, -4, 0, 38)}, 0.08)
+    task.wait(0.08)
+    tween(generateBtn, {Size = UDim2.new(0.48, -4, 0, 42)}, 0.08)
+    
+    generatedScript = generateScriptCode()
+    
+    if generatedScript then
+        outputBox.Text = generatedScript:sub(1, 500) .. "\n\n[" .. #generatedScript .. " chars]"
+        outputBox.TextColor3 = COLORS.White
+        
+        tween(copyBtn, {BackgroundColor3 = Color3.fromRGB(70, 140, 255), TextColor3 = COLORS.White}, 0.2)
+        
+        generateBtn.Text = "✓ DONE!"
+        tween(generateBtn, {BackgroundColor3 = Color3.fromRGB(50, 180, 80)}, 0.2)
+        task.wait(1)
+        generateBtn.Text = "⚡ GENERATE"
+        tween(generateBtn, {BackgroundColor3 = COLORS.Green}, 0.2)
+        
+        notify("Generated!")
+    end
+end)
+
+-- Copy button
+copyBtn.MouseButton1Click:Connect(function()
+    if generatedScript == "" then notify("Generate first!") return end
+    
+    tween(copyBtn, {Size = UDim2.new(0.46, -4, 0, 38)}, 0.08)
+    task.wait(0.08)
+    tween(copyBtn, {Size = UDim2.new(0.48, -4, 0, 42)}, 0.08)
+    
+    pcall(function() setclipboard(generatedScript) end)
+    
+    copyBtn.Text = "✓ COPIED!"
+    tween(copyBtn, {BackgroundColor3 = COLORS.Green}, 0.2)
+    notify("Copied!")
+    
+    task.wait(1.5)
+    copyBtn.Text = "📋 COPY CODE"
+    tween(copyBtn, {BackgroundColor3 = Color3.fromRGB(70, 140, 255)}, 0.2)
+end)
+
+-- Tab switching
+for tabName, btn in pairs(tabButtons) do
+    btn.MouseButton1Click:Connect(function()
+        currentTab = tabName
+        for name, button in pairs(tabButtons) do
+            if name == tabName then
+                button.BackgroundColor3 = (name == "GENERATE") and COLORS.Green or COLORS.White
+                button.TextColor3 = (name == "GENERATE") and COLORS.White or COLORS.Black
+            else
+                button.BackgroundColor3 = (name == "GENERATE") and Color3.fromRGB(50, 140, 60) or COLORS.Frame
+                button.TextColor3 = (name == "GENERATE") and COLORS.White or COLORS.LightGray
+            end
+        end
+        for name, container in pairs(contentContainers) do container.Visible = (name == tabName) end
+    end)
+end
+
+-- Menu toggle
+local menuOpen = false
+iconBtn.MouseButton1Click:Connect(function()
+    menuOpen = not menuOpen
+    if menuOpen then
+        mainFrame.Size = UDim2.new(0, 0, 0, 0)
+        mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        mainFrame.Visible = true
+        tween(mainFrame, {Size = UDim2.new(0, 550, 0, 340), Position = UDim2.new(0.5, -275, 0.5, -170)}, 0.35, Enum.EasingStyle.Back)
+        notify("Editor Opened!")
+    else
+        tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.25)
+        task.wait(0.25)
+        mainFrame.Visible = false
+    end
+end)
+
+minimizeBtn.MouseButton1Click:Connect(function()
+    menuOpen = false
+    tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.25)
+    task.wait(0.25)
+    mainFrame.Visible = false
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    notify("Closed!")
+    tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.25)
+    tween(iconBtn, {Size = UDim2.new(0, 0, 0, 0)}, 0.25)
+    task.wait(0.3)
+    pcall(function() screenGui:Destroy() end)
+end)
+
+print("PELI EDITOR v5 Loaded!")
+notify("Peli Editor v5!")
